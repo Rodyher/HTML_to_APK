@@ -27,13 +27,6 @@ done
 echo "Todos los archivos necesarios encontrados. Procediendo..."
 echo ""
 
-# --- A partir de aquí, el resto del script ---
-echo "--- Iniciando el proceso de creación de APK ---"
-echo "Nombre de carpeta: $FOLDER_NAME"
-echo "ID de la app: $APP_ID"
-echo "Nombre visible: $APP_NAME"
-echo ""
-
 # --- Función para instalar ffmpeg si es necesario ---
 install_ffmpeg() {
     echo "  - FFmpeg no se encontró. Necesario para redimensionar imágenes automáticamente."
@@ -65,7 +58,7 @@ SPLASH_HEIGHT=$(echo "$SPLASH_DIMENSIONS" | cut -d'x' -f2)
 
 if [ "$SPLASH_WIDTH" -lt 1920 ] || [ "$SPLASH_HEIGHT" -lt 1920 ]; then
     echo "  - La imagen splash.png ($SPLASH_WIDTH x $SPLASH_HEIGHT) es menor que el mínimo de 1920x1920."
-    echo "  - Redimensionando a 1920x1920."
+    echo "  - Redimensionando a 1920x1920. Se creará una copia de seguridad."
     mv splash.png splash.png.bak
     ffmpeg -i splash.png.bak -vf "scale=1920:1920:force_original_aspect_ratio=decrease,pad=1920:1920:(ow-iw)/2:(oh-ih)/2" -y splash.png
     if [ $? -ne 0 ]; then echo "Error al redimensionar splash.png. Saliendo."; exit 1; fi
@@ -87,6 +80,7 @@ if [ "$ICON_WIDTH" -lt 1024 ] || [ "$ICON_HEIGHT" -lt 1024 ]; then
 else
     echo "  - icon.png ya tiene las dimensiones correctas. Saltando."
 fi
+
 
 # 1. Crear el proyecto de Cordova
 echo "-> Paso 1: Creando el proyecto de Cordova..."
