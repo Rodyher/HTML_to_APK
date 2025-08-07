@@ -1,11 +1,11 @@
 # HTML_to_APK
----
+
 
 Herramienta de línea de comandos para empaquetar una página web (HTML, CSS, JS) en un archivo APK de Android de forma automática, sin usar Android Studio.
 
 buildapk es una herramienta de línea de comandos para automatizar la creación de archivos APK de Android a partir de una página web estática (HTML, CSS y JS). Este script utiliza Apache Cordova para convertir tu web en una WebView sin necesidad de Android Studio, simplificando todo el proceso de empaquetado en un solo comando.
----
 
+---
 ## 🚀 Características
 Instalación con un solo comando: Configura automáticamente todas las dependencias necesarias en sistemas basados en Linux.
 
@@ -55,5 +55,6 @@ Ejemplo:
 ```Bash
 buildapk mi-proyecto-web com.ejemplo.webapp "Mi App Web"
 ```
-📦 Resultado
+---
+## 📦 Resultado
 Al finalizar, el script creará un directorio con el nombre que especifiques y colocará el archivo APK de depuración (app-debug.apk) en la raíz de esa carpeta para que puedas encontrarlo fácilmente.
