@@ -1,0 +1,76 @@
+#!/bin/bash
+
+# --- Comprobar los argumentos de entrada ---
+if [ "$#" -ne 3 ]; then
+    echo "Uso: buildapk <nombre_carpeta> <id_app> \"<nombre_visible>\""
+    echo "Ejemplo: buildapk mi-app com.miempresa.app \"Mi App de Prueba\""
+    exit 1
+fi
+
+# --- Variables de los argumentos de entrada ---
+FOLDER_NAME="$1"
+APP_ID="$2"
+APP_NAME="$3"
+
+# --- Lista de archivos obligatorios ---
+REQUIRED_FILES=(index.html style.css script.js icon.png splash.png)
+
+# --- Validar que todos los archivos existan en el directorio actual ---
+echo "--- Validando la existencia de archivos necesarios... ---"
+for file in "${REQUIRED_FILES[@]}"; do
+    if [ ! -f "$file" ]; then
+        echo "Error: Archivo '$file' no encontrado en el directorio actual."
+        echo "Asegúrate de que todos los archivos necesarios estén presentes antes de ejecutar el script."
+        exit 1
+    fi
+done
+echo "Todos los archivos necesarios encontrados. Procediendo..."
+echo ""
+
+# --- A partir de aquí, el resto del script ---
+echo "--- Iniciando el proceso de creación de APK ---"
+echo "Nombre de carpeta: $FOLDER_NAME"
+echo "ID de la app: $APP_ID"
+echo "Nombre visible: $APP_NAME"
+echo ""
+
+# 1. Crear el proyecto de Cordova
+echo "-> Paso 1: Creando el proyecto de Cordova..."
+cordova create "$FOLDER_NAME" "$APP_ID" "$APP_NAME" || { echo "Error al crear el proyecto. Saliendo."; exit 1; }
+
+# 2. Mover archivos de la web a la carpeta www
+echo "-> Paso 2: Moviendo los archivos de la web..."
+rm -rf "$FOLDER_NAME/www/*"
+mv index.html style.css script.js "$FOLDER_NAME/www/"
+
+# 3. Mover los archivos de recursos (icono y splash)
+echo "-> Paso 3: Moviendo los archivos de recursos..."
+mkdir -p "$FOLDER_NAME/resources"
+mv icon.png splash.png "$FOLDER_NAME/resources/"
+
+# 4. Navegar al directorio del proyecto y agregar la plataforma Android
+echo "-> Paso 4: Agregando la plataforma Android..."
+cd "$FOLDER_NAME"
+cordova platform add android || { echo "Error al agregar la plataforma Android. Saliendo."; exit 1; }
+
+# 5. Generar iconos y splash screens
+echo "-> Paso 5: Generando iconos y splash screens..."
+cordova-res android || { echo "Error con cordova-res. Asegúrate de tenerlo instalado. Saliendo."; exit 1; }
+
+# 6. Construir la APK
+echo "-> Paso 6: Construyendo la APK de Android..."
+cordova build android || { echo "Error al construir la APK. Revisa tus dependencias. Saliendo."; exit 1; }
+
+# 7. Mover la APK a la carpeta principal
+echo "-> Paso 7: Moviendo la APK a la carpeta raíz del proyecto..."
+APK_PATH="platforms/android/app/build/outputs/apk/debug/app-debug.apk"
+FINAL_PATH="." # La carpeta actual (raíz del proyecto)
+if [ -f "$APK_PATH" ]; then
+    mv "$APK_PATH" "$FINAL_PATH/"
+    echo "¡La APK ha sido movida con éxito!"
+    echo "Puedes encontrar el archivo en: $FOLDER_NAME/app-debug.apk"
+else
+    echo "Error: No se encontró la APK para moverla."
+fi
+
+echo "--- ¡Proceso completado! ---"
