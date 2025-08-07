@@ -31,17 +31,17 @@ fi
 # 3. Instalar Cordova y cordova-res de forma global (si no están instalados)
 echo "-> Paso 3: Verificando e instalando Cordova y cordova-res..."
 if ! command -v cordova &> /dev/null; then
-    echo "  Instalando Cordova..."
+    echo "  - Instalando Cordova..."
     sudo npm install -g cordova
 else
-    echo "  Cordova ya está instalado. Saltando."
+    echo "  - Cordova ya está instalado. Saltando."
 fi
 
 if ! command -v cordova-res &> /dev/null; then
-    echo "  Instalando cordova-res..."
+    echo "  - Instalando cordova-res..."
     sudo npm install -g cordova-res
 else
-    echo "  cordova-res ya está instalado. Saltando."
+    echo "  - cordova-res ya está instalado. Saltando."
 fi
 
 # 4. Verificar y configurar el Android SDK
@@ -67,19 +67,18 @@ fi
 
 # C. Si se encontró el SDK, confirmar y configurar PATH
 if [ -n "$ANDROID_SDK_PATH" ] && [ -d "$ANDROID_SDK_PATH" ]; then
-    echo "-> Android SDK encontrado en: $ANDROID_SDK_PATH"
-    echo "Añadiendo variables de entorno al PATH si es necesario."
+    echo "  - Android SDK encontrado en: $ANDROID_SDK_PATH"
+    echo "  - Añadiendo variables de entorno al PATH si es necesario."
     if ! grep -q "ANDROID_HOME" "$ZSHRC_FILE"; then
         echo "export ANDROID_HOME=\"$ANDROID_SDK_PATH\"" >> "$ZSHRC_FILE"
         echo "export PATH=\"\$PATH:\$ANDROID_HOME/cmdline-tools/latest/bin:\$ANDROID_HOME/platform-tools\"" >> "$ZSHRC_FILE"
-        echo "  - Variables de entorno del SDK añadidas a $ZSHRC_FILE"
     else
         echo "  - Variables de entorno del SDK ya están configuradas. Saltando."
     fi
 else
     # D. Si no se encontró en ninguna parte, instruir al usuario
-    echo "-> No se pudo encontrar el Android SDK en ubicaciones comunes."
-    echo "Para la instalación del SDK de Android, recomendamos que lo descargues manualmente."
+    echo "  - No se pudo encontrar el Android SDK en ubicaciones comunes."
+    echo "Para la instalación del SDK de Android, te recomendamos que lo descargues manualmente."
     echo "  https://developer.android.com/studio#command-line-tools"
     echo "Luego, asegúrate de configurar las variables de entorno ANDROID_HOME y PATH en tu ~/.zshrc."
     read -p "Presiona Enter para continuar una vez que el SDK esté configurado..."
@@ -89,20 +88,20 @@ fi
 echo "-> Paso 5: Verificando y configurando el script '$SCRIPT_NAME'..."
 mkdir -p "$LOCAL_BIN_DIR"
 if [ ! -f "$LOCAL_BIN_DIR/$SCRIPT_NAME" ]; then
-    echo "  Descargando y configurando el script '$SCRIPT_NAME'..."
+    echo "  - Descargando y configurando el script '$SCRIPT_NAME'..."
     wget -O "$LOCAL_BIN_DIR/$SCRIPT_NAME" "$SCRIPT_SOURCE"
     chmod +x "$LOCAL_BIN_DIR/$SCRIPT_NAME"
 else
-    echo "  El script '$SCRIPT_NAME' ya existe en $LOCAL_BIN_DIR. Saltando la descarga."
+    echo "  - El script '$SCRIPT_NAME' ya existe en $LOCAL_BIN_DIR. Saltando la descarga."
 fi
 
 # 6. Asegurarse de que ~/.local/bin esté en el PATH (si no está)
 echo "-> Paso 6: Verificando el PATH..."
-if ! grep -q "$LOCAL_BIN_DIR" "$ZSHRC_FILE"; then
-    echo "  Añadiendo '$LOCAL_BIN_DIR' al PATH de Zsh..."
+if ! grep -q "\$HOME/\.local/bin" "$ZSHRC_FILE"; then
+    echo "  - Añadiendo '$LOCAL_BIN_DIR' al PATH de Zsh..."
     echo "export PATH=\"$LOCAL_BIN_DIR:\$PATH\"" >> "$ZSHRC_FILE"
 else
-    echo "  El PATH ya incluye '$LOCAL_BIN_DIR'. Saltando."
+    echo "  - El PATH ya incluye '$LOCAL_BIN_DIR'. Saltando."
 fi
 
 echo ""
