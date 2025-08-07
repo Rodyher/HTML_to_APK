@@ -40,7 +40,8 @@ cordova create "$FOLDER_NAME" "$APP_ID" "$APP_NAME" || { echo "Error al crear el
 
 # 2. Mover archivos de la web a la carpeta www
 echo "-> Paso 2: Moviendo los archivos de la web..."
-rm -rf "$FOLDER_NAME/www/*"
+rm -rf "$FOLDER_NAME/www/"
+mkdir "$FOLDER_NAME/www/"
 mv index.html style.css script.js "$FOLDER_NAME/www/"
 
 # 3. Mover los archivos de recursos (icono y splash)
