@@ -28,8 +28,16 @@ else
     echo "-> Paso 2: Java JDK ya está instalado. Saltando."
 fi
 
-# 3. Instalar Cordova y cordova-res de forma global (si no están instalados)
-echo "-> Paso 3: Verificando e instalando Cordova y cordova-res..."
+# 3. Instalar Gradle
+if ! command -v gradle &> /dev/null; then
+    echo "-> Paso 3: Instalando Gradle..."
+    sudo dnf install -y gradle
+else
+    echo "-> Paso 3: Gradle ya está instalado. Saltando."
+fi
+
+# 4. Instalar Cordova y cordova-res de forma global (si no están instalados)
+echo "-> Paso 4: Verificando e instalando Cordova y cordova-res..."
 if ! command -v cordova &> /dev/null; then
     echo "  - Instalando Cordova..."
     sudo npm install -g cordova
@@ -44,8 +52,8 @@ else
     echo "  - cordova-res ya está instalado. Saltando."
 fi
 
-# 4. Verificar y configurar el Android SDK
-echo "-> Paso 4: Verificando el Android SDK..."
+# 5. Verificar y configurar el Android SDK
+echo "-> Paso 5: Verificando el Android SDK..."
 
 ANDROID_SDK_PATH=""
 
@@ -84,8 +92,8 @@ else
     read -p "Presiona Enter para continuar una vez que el SDK esté configurado..."
 fi
 
-# 5. Descargar el script buildapk y darle permisos de ejecución (si no está instalado)
-echo "-> Paso 5: Verificando y configurando el script '$SCRIPT_NAME'..."
+# 6. Descargar el script buildapk y darle permisos de ejecución (si no está instalado)
+echo "-> Paso 6: Verificando y configurando el script '$SCRIPT_NAME'..."
 mkdir -p "$LOCAL_BIN_DIR"
 if [ ! -f "$LOCAL_BIN_DIR/$SCRIPT_NAME" ]; then
     echo "  - Descargando y configurando el script '$SCRIPT_NAME'..."
@@ -95,8 +103,8 @@ else
     echo "  - El script '$SCRIPT_NAME' ya existe en $LOCAL_BIN_DIR. Saltando la descarga."
 fi
 
-# 6. Asegurarse de que ~/.local/bin esté en el PATH (si no está)
-echo "-> Paso 6: Verificando el PATH..."
+# 7. Asegurarse de que ~/.local/bin esté en el PATH (si no está)
+echo "-> Paso 7: Verificando el PATH..."
 if ! grep -q "\$HOME/\.local/bin" "$ZSHRC_FILE"; then
     echo "  - Añadiendo '$LOCAL_BIN_DIR' al PATH de Zsh..."
     echo "export PATH=\"$LOCAL_BIN_DIR:\$PATH\"" >> "$ZSHRC_FILE"
