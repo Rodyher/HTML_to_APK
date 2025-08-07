@@ -34,14 +34,68 @@ echo "ID de la app: $APP_ID"
 echo "Nombre visible: $APP_NAME"
 echo ""
 
+# --- Función para instalar ffmpeg si es necesario ---
+install_ffmpeg() {
+    echo "  - FFmpeg no se encontró. Necesario para redimensionar imágenes automáticamente."
+    read -p "¿Quieres instalar FFmpeg ahora? (s/n): " choice
+    if [[ "$choice" =~ ^[Ss]$ ]]; then
+        echo "  - Instalando FFmpeg..."
+        sudo dnf install -y ffmpeg
+        if ! command -v ffmpeg &> /dev/null; then
+            echo "Error: La instalación de FFmpeg falló. Saliendo."
+            exit 1
+        fi
+    else
+        echo "Operación cancelada por el usuario. Saliendo."
+        exit 1
+    fi
+}
+
+# --- Redimensionar imágenes si es necesario ---
+echo "-> Verificando y redimensionando imágenes si es necesario..."
+
+if ! command -v ffmpeg &> /dev/null || ! command -v ffprobe &> /dev/null; then
+    install_ffmpeg
+fi
+
+# Redimensionar splash.png
+SPLASH_DIMENSIONS=$(ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of csv=s=x:p=0 splash.png)
+SPLASH_WIDTH=$(echo "$SPLASH_DIMENSIONS" | cut -d'x' -f1)
+SPLASH_HEIGHT=$(echo "$SPLASH_DIMENSIONS" | cut -d'x' -f2)
+
+if [ "$SPLASH_WIDTH" -lt 1920 ] || [ "$SPLASH_HEIGHT" -lt 1920 ]; then
+    echo "  - La imagen splash.png ($SPLASH_WIDTH x $SPLASH_HEIGHT) es menor que el mínimo de 1920x1920."
+    echo "  - Redimensionando a 1920x1920."
+    mv splash.png splash.png.bak
+    ffmpeg -i splash.png.bak -vf "scale=1920:1920:force_original_aspect_ratio=decrease,pad=1920:1920:(ow-iw)/2:(oh-ih)/2" -y splash.png
+    if [ $? -ne 0 ]; then echo "Error al redimensionar splash.png. Saliendo."; exit 1; fi
+else
+    echo "  - splash.png ya tiene las dimensiones correctas. Saltando."
+fi
+
+# Redimensionar icon.png
+ICON_DIMENSIONS=$(ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of csv=s=x:p=0 icon.png)
+ICON_WIDTH=$(echo "$ICON_DIMENSIONS" | cut -d'x' -f1)
+ICON_HEIGHT=$(echo "$ICON_DIMENSIONS" | cut -d'x' -f2)
+
+if [ "$ICON_WIDTH" -lt 1024 ] || [ "$ICON_HEIGHT" -lt 1024 ]; then
+    echo "  - La imagen icon.png ($ICON_WIDTH x $ICON_HEIGHT) es menor que el mínimo de 1024x1024."
+    echo "  - Redimensionando a 1024x1024."
+    mv icon.png icon.png.bak
+    ffmpeg -i icon.png.bak -vf "scale=1024:1024:force_original_aspect_ratio=decrease,pad=1024:1024:(ow-iw)/2:(oh-ih)/2" -y icon.png
+    if [ $? -ne 0 ]; then echo "Error al redimensionar icon.png. Saliendo."; exit 1; fi
+else
+    echo "  - icon.png ya tiene las dimensiones correctas. Saltando."
+fi
+
 # 1. Crear el proyecto de Cordova
 echo "-> Paso 1: Creando el proyecto de Cordova..."
 cordova create "$FOLDER_NAME" "$APP_ID" "$APP_NAME" || { echo "Error al crear el proyecto. Saliendo."; exit 1; }
 
 # 2. Mover archivos de la web a la carpeta www
-echo "-> Paso 2: Moviendo los archivos de la web..."
-rm -rf "$FOLDER_NAME/www/"
-mkdir "$FOLDER_NAME/www/"
+echo "-> Paso 2: Limpiando y moviendo los archivos de la web..."
+rm -rf "$FOLDER_NAME/www"
+mkdir "$FOLDER_NAME/www"
 mv index.html style.css script.js "$FOLDER_NAME/www/"
 
 # 3. Mover los archivos de recursos (icono y splash)
