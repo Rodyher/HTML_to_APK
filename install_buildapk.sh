@@ -28,10 +28,21 @@ else
     echo "-> Paso 2: Java JDK ya está instalado. Saltando."
 fi
 
-# 3. Instalar Cordova y cordova-res de forma global
-echo "-> Paso 3: Instalando Cordova y cordova-res..."
-npm install -g cordova
-npm install -g cordova-res
+# 3. Instalar Cordova y cordova-res de forma global (si no están instalados)
+echo "-> Paso 3: Verificando e instalando Cordova y cordova-res..."
+if ! command -v cordova &> /dev/null; then
+    echo "  Instalando Cordova..."
+    sudo npm install -g cordova
+else
+    echo "  Cordova ya está instalado. Saltando."
+fi
+
+if ! command -v cordova-res &> /dev/null; then
+    echo "  Instalando cordova-res..."
+    sudo npm install -g cordova-res
+else
+    echo "  cordova-res ya está instalado. Saltando."
+fi
 
 # 4. Verificar y configurar el Android SDK
 echo "-> Paso 4: Verificando el Android SDK..."
@@ -61,6 +72,9 @@ if [ -n "$ANDROID_SDK_PATH" ] && [ -d "$ANDROID_SDK_PATH" ]; then
     if ! grep -q "ANDROID_HOME" "$ZSHRC_FILE"; then
         echo "export ANDROID_HOME=\"$ANDROID_SDK_PATH\"" >> "$ZSHRC_FILE"
         echo "export PATH=\"\$PATH:\$ANDROID_HOME/cmdline-tools/latest/bin:\$ANDROID_HOME/platform-tools\"" >> "$ZSHRC_FILE"
+        echo "  - Variables de entorno del SDK añadidas a $ZSHRC_FILE"
+    else
+        echo "  - Variables de entorno del SDK ya están configuradas. Saltando."
     fi
 else
     # D. Si no se encontró en ninguna parte, instruir al usuario
@@ -71,16 +85,24 @@ else
     read -p "Presiona Enter para continuar una vez que el SDK esté configurado..."
 fi
 
-# 5. Descargar el script buildapk y darle permisos de ejecución
-echo "-> Paso 5: Descargando y configurando el script '$SCRIPT_NAME'..."
+# 5. Descargar el script buildapk y darle permisos de ejecución (si no está instalado)
+echo "-> Paso 5: Verificando y configurando el script '$SCRIPT_NAME'..."
 mkdir -p "$LOCAL_BIN_DIR"
-wget -O "$LOCAL_BIN_DIR/$SCRIPT_NAME" "$SCRIPT_SOURCE"
-chmod +x "$LOCAL_BIN_DIR/$SCRIPT_NAME"
+if [ ! -f "$LOCAL_BIN_DIR/$SCRIPT_NAME" ]; then
+    echo "  Descargando y configurando el script '$SCRIPT_NAME'..."
+    wget -O "$LOCAL_BIN_DIR/$SCRIPT_NAME" "$SCRIPT_SOURCE"
+    chmod +x "$LOCAL_BIN_DIR/$SCRIPT_NAME"
+else
+    echo "  El script '$SCRIPT_NAME' ya existe en $LOCAL_BIN_DIR. Saltando la descarga."
+fi
 
-# 6. Asegurarse de que ~/.local/bin esté en el PATH
+# 6. Asegurarse de que ~/.local/bin esté en el PATH (si no está)
+echo "-> Paso 6: Verificando el PATH..."
 if ! grep -q "$LOCAL_BIN_DIR" "$ZSHRC_FILE"; then
-    echo "-> Paso 6: Añadiendo '$LOCAL_BIN_DIR' al PATH de Zsh..."
+    echo "  Añadiendo '$LOCAL_BIN_DIR' al PATH de Zsh..."
     echo "export PATH=\"$LOCAL_BIN_DIR:\$PATH\"" >> "$ZSHRC_FILE"
+else
+    echo "  El PATH ya incluye '$LOCAL_BIN_DIR'. Saltando."
 fi
 
 echo ""
