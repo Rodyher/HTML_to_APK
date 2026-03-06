@@ -1,125 +1,153 @@
 #!/bin/bash
 
-# --- Comprobar los argumentos de entrada ---
+# -------------------------------
+# HTML_to_APK build tool
+# -------------------------------
+
 if [ "$#" -ne 3 ]; then
-    echo "Uso: buildapk <nombre_carpeta> <id_app> \"<nombre_visible>\""
-    echo "Ejemplo: buildapk mi-app com.miempresa.app \"Mi App de Prueba\""
+    echo "Uso:"
+    echo "buildapk <nombre_carpeta> <id_app> \"<nombre_visible>\""
     exit 1
 fi
 
-# --- Variables de los argumentos de entrada ---
 FOLDER_NAME="$1"
 APP_ID="$2"
 APP_NAME="$3"
 
-# --- Lista de archivos obligatorios ---
 REQUIRED_FILES=(index.html style.css script.js icon.png splash.png)
 
-# --- Validar que todos los archivos existan en el directorio actual ---
-echo "--- Validando la existencia de archivos necesarios... ---"
+echo "Verificando archivos..."
+
 for file in "${REQUIRED_FILES[@]}"; do
     if [ ! -f "$file" ]; then
-        echo "Error: Archivo '$file' no encontrado en el directorio actual."
-        echo "Asegúrate de que todos los archivos necesarios estén presentes antes de ejecutar el script."
+        echo "Error: falta $file"
         exit 1
     fi
 done
-echo "Todos los archivos necesarios encontrados. Procediendo..."
-echo ""
 
-# --- Función para instalar ffmpeg si es necesario ---
-install_ffmpeg() {
-    echo "  - FFmpeg no se encontró. Necesario para redimensionar imágenes automáticamente."
-    read -p "¿Quieres instalar FFmpeg ahora? (s/n): " choice
-    if [[ "$choice" =~ ^[Ss]$ ]]; then
-        echo "  - Instalando FFmpeg..."
-        sudo dnf install -y ffmpeg
-        if ! command -v ffmpeg &> /dev/null; then
-            echo "Error: La instalación de FFmpeg falló. Saliendo."
-            exit 1
-        fi
-    else
-        echo "Operación cancelada por el usuario. Saliendo."
-        exit 1
-    fi
-}
+echo "Todos los archivos encontrados."
 
-# --- Redimensionar imágenes si es necesario ---
-echo "-> Verificando y redimensionando imágenes si es necesario..."
+# --------------------------------
+# Verificar dependencias
+# --------------------------------
 
-if ! command -v ffmpeg &> /dev/null || ! command -v ffprobe &> /dev/null; then
-    install_ffmpeg
+if ! command -v cordova &> /dev/null; then
+    echo "Cordova no está instalado."
+    exit 1
 fi
 
-# Redimensionar splash.png
-SPLASH_DIMENSIONS=$(ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of csv=s=x:p=0 splash.png)
-SPLASH_WIDTH=$(echo "$SPLASH_DIMENSIONS" | cut -d'x' -f1)
-SPLASH_HEIGHT=$(echo "$SPLASH_DIMENSIONS" | cut -d'x' -f2)
+if ! command -v cordova-res &> /dev/null; then
+    echo "Instalando cordova-res..."
+    npm install -g cordova-res
+fi
 
-if [ "$SPLASH_WIDTH" -lt 1920 ] || [ "$SPLASH_HEIGHT" -lt 1920 ]; then
-    echo "  - La imagen splash.png ($SPLASH_WIDTH x $SPLASH_HEIGHT) es menor que el mínimo de 1920x1920."
-    echo "  - Redimensionando a 1920x1920. Se creará una copia de seguridad."
+if ! command -v ffmpeg &> /dev/null; then
+    echo "Instalando ffmpeg..."
+    sudo dnf install -y ffmpeg
+fi
+
+# --------------------------------
+# Redimensionar imágenes
+# --------------------------------
+
+echo "Verificando imágenes..."
+
+SPLASH_DIM=$(ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of csv=s=x:p=0 splash.png)
+SW=$(echo "$SPLASH_DIM" | cut -dx -f1)
+SH=$(echo "$SPLASH_DIM" | cut -dx -f2)
+
+if [ "$SW" -lt 2732 ] || [ "$SH" -lt 2732 ]; then
+    echo "Redimensionando splash..."
     mv splash.png splash.png.bak
-    ffmpeg -i splash.png.bak -vf "scale=1920:1920:force_original_aspect_ratio=decrease,pad=1920:1920:(ow-iw)/2:(oh-ih)/2" -y splash.png
-    if [ $? -ne 0 ]; then echo "Error al redimensionar splash.png. Saliendo."; exit 1; fi
-else
-    echo "  - splash.png ya tiene las dimensiones correctas. Saltando."
+    ffmpeg -i splash.png.bak -vf "scale=2732:2732:force_original_aspect_ratio=decrease,pad=2732:2732:(ow-iw)/2:(oh-ih)/2" -y splash.png
 fi
 
-# Redimensionar icon.png
-ICON_DIMENSIONS=$(ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of csv=s=x:p=0 icon.png)
-ICON_WIDTH=$(echo "$ICON_DIMENSIONS" | cut -d'x' -f1)
-ICON_HEIGHT=$(echo "$ICON_DIMENSIONS" | cut -d'x' -f2)
+ICON_DIM=$(ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of csv=s=x:p=0 icon.png)
+IW=$(echo "$ICON_DIM" | cut -dx -f1)
+IH=$(echo "$ICON_DIM" | cut -dx -f2)
 
-if [ "$ICON_WIDTH" -lt 1024 ] || [ "$ICON_HEIGHT" -lt 1024 ]; then
-    echo "  - La imagen icon.png ($ICON_WIDTH x $ICON_HEIGHT) es menor que el mínimo de 1024x1024."
-    echo "  - Redimensionando a 1024x1024."
+if [ "$IW" -lt 1024 ] || [ "$IH" -lt 1024 ]; then
+    echo "Redimensionando icon..."
     mv icon.png icon.png.bak
     ffmpeg -i icon.png.bak -vf "scale=1024:1024:force_original_aspect_ratio=decrease,pad=1024:1024:(ow-iw)/2:(oh-ih)/2" -y icon.png
-    if [ $? -ne 0 ]; then echo "Error al redimensionar icon.png. Saliendo."; exit 1; fi
-else
-    echo "  - icon.png ya tiene las dimensiones correctas. Saltando."
 fi
 
+# --------------------------------
+# Crear proyecto Cordova
+# --------------------------------
 
-# 1. Crear el proyecto de Cordova
-echo "-> Paso 1: Creando el proyecto de Cordova..."
-cordova create "$FOLDER_NAME" "$APP_ID" "$APP_NAME" || { echo "Error al crear el proyecto. Saliendo."; exit 1; }
+echo "Creando proyecto..."
 
-# 2. Mover archivos de la web a la carpeta www
-echo "-> Paso 2: Limpiando y moviendo los archivos de la web..."
+cordova create "$FOLDER_NAME" "$APP_ID" "$APP_NAME" || exit 1
+
 rm -rf "$FOLDER_NAME/www"
 mkdir "$FOLDER_NAME/www"
+
 mv index.html style.css script.js "$FOLDER_NAME/www/"
 
-# 3. Mover los archivos de recursos (icono y splash)
-echo "-> Paso 3: Moviendo los archivos de recursos..."
 mkdir -p "$FOLDER_NAME/resources"
+
 mv icon.png splash.png "$FOLDER_NAME/resources/"
 
-# 4. Navegar al directorio del proyecto y agregar la plataforma Android
-echo "-> Paso 4: Agregando la plataforma Android..."
-cd "$FOLDER_NAME"
-cordova platform add android || { echo "Error al agregar la plataforma Android. Saliendo."; exit 1; }
+cd "$FOLDER_NAME" || exit 1
 
-# 5. Generar iconos y splash screens
-echo "-> Paso 5: Generando iconos y splash screens..."
-cordova-res android || { echo "Error con cordova-res. Asegúrate de tenerlo instalado. Saliendo."; exit 1; }
+# --------------------------------
+# Añadir Android
+# --------------------------------
 
-# 6. Construir la APK
-echo "-> Paso 6: Construyendo la APK de Android..."
-cordova build android || { echo "Error al construir la APK. Revisa tus dependencias. Saliendo."; exit 1; }
+echo "Añadiendo Android..."
 
-# 7. Mover la APK a la carpeta principal
-echo "-> Paso 7: Moviendo la APK a la carpeta raíz del proyecto..."
+cordova platform add android || exit 1
+
+# --------------------------------
+# Plugins necesarios
+# --------------------------------
+
+echo "Instalando plugins..."
+
+cordova plugin add cordova-plugin-splashscreen
+cordova plugin add cordova-plugin-whitelist
+
+# --------------------------------
+# Configurar config.xml
+# --------------------------------
+
+echo "Configurando splash..."
+
+sed -i '/<widget/a \
+    <preference name="SplashScreenDelay" value="3000" />\
+    <preference name="FadeSplashScreenDuration" value="500" />\
+    <preference name="AndroidWindowSplashScreenAnimatedIcon" value="resources/splash.png" />\
+    <preference name="AndroidWindowSplashScreenBackground" value="#ffffff" />\
+' config.xml
+
+# --------------------------------
+# Generar iconos y splash
+# --------------------------------
+
+echo "Generando recursos..."
+
+cordova-res android
+
+cordova prepare
+
+# --------------------------------
+# Compilar APK
+# --------------------------------
+
+echo "Construyendo APK..."
+
+cordova build android
+
 APK_PATH="platforms/android/app/build/outputs/apk/debug/app-debug.apk"
-FINAL_PATH="." # La carpeta actual (raíz del proyecto)
+
 if [ -f "$APK_PATH" ]; then
-    mv "$APK_PATH" "$FINAL_PATH/"
-    echo "¡La APK ha sido movida con éxito!"
-    echo "Puedes encontrar el archivo en: $FOLDER_NAME/app-debug.apk"
+    mv "$APK_PATH" .
+    echo ""
+    echo "APK generada:"
+    echo "$FOLDER_NAME/app-debug.apk"
 else
-    echo "Error: No se encontró la APK para moverla."
+    echo "No se encontró la APK."
 fi
 
-echo "--- ¡Proceso completado! ---"
+echo "Proceso completado."
