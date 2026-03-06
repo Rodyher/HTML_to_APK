@@ -1,60 +1,197 @@
 # HTML_to_APK
 
+**HTML_to_APK** es una herramienta de línea de comandos que permite
+convertir fácilmente una página web estática (**HTML, CSS y
+JavaScript**) en una **aplicación Android (.APK)** utilizando **Apache
+Cordova**, sin necesidad de instalar ni usar **Android Studio**.
 
-Herramienta de línea de comandos para empaquetar una página web (HTML, CSS, JS) en un archivo APK de Android de forma automática, sin usar Android Studio.
+El objetivo del proyecto es simplificar al máximo el proceso de
+empaquetar una web en una app Android, permitiendo hacerlo con **un solo
+comando**.
 
-buildapk es una herramienta de línea de comandos para automatizar la creación de archivos APK de Android a partir de una página web estática (HTML, CSS y JS). Este script utiliza Apache Cordova para convertir tu web en una WebView sin necesidad de Android Studio, simplificando todo el proceso de empaquetado en un solo comando.
+------------------------------------------------------------------------
 
----
-## 🚀 Características
-Instalación con un solo comando: Configura automáticamente todas las dependencias necesarias en sistemas basados en Linux.
+# 🚀 Características
 
-Automatización completa: Un solo comando para crear, configurar y compilar la APK de tu proyecto web.
+-   ⚡ **Instalación automática** de dependencias necesarias.
+-   📦 **Compilación de APK con un solo comando**.
+-   🔍 **Verificación automática de archivos requeridos**.
+-   🔁 **Evita reinstalar dependencias ya instaladas**.
+-   🧩 Utiliza **Apache Cordova** para generar la aplicación Android.
+-   🖥️ Diseñado para **Linux (especialmente distribuciones basadas en
+    Debian/Ubuntu)**.
+-   🧪 Ideal para **prototipos rápidos**, **apps simples** o **convertir
+    webs en apps móviles**.
 
-Validación de archivos: El script verifica que todos los archivos necesarios (.html, .css, .js, icon.png, splash.png) existan antes de empezar.
+------------------------------------------------------------------------
 
-Flujo de trabajo eficiente: Ideal para desarrolladores que buscan crear prototipos o aplicaciones simples de forma rápida.
+# ⚙️ Instalación
 
-## ⚙️ Instalación (para equipos nuevos)
-Para instalar y configurar todas las dependencias necesarias en tu sistema, ejecuta el siguiente comando en tu terminal. Este proceso puede tardar varios minutos, ya que instala Node.js, Cordova, y configura el entorno de Android.
+Para instalar todas las dependencias necesarias en un sistema nuevo,
+ejecuta:
 
-```Bash
+``` bash
 curl -s https://raw.githubusercontent.com/Rodyher/HTML_to_APK/main/install_buildapk.sh | bash
 ```
----
-## 🖥️ Uso
-Una vez que la instalación haya finalizado, puedes usar el comando buildapk en el directorio de tu proyecto web.
 
-Requisitos previos:
+Este script instalará automáticamente:
 
-Asegúrate de que los siguientes archivos estén en el directorio donde ejecutes el comando:
+-   Node.js
+-   npm
+-   Apache Cordova
+-   Dependencias del SDK de Android
+-   Configuración necesaria del entorno
 
-index.html
+Además, el instalador:
 
-style.css
+-   Verifica si las dependencias ya están instaladas.
+-   Evita reinstalar componentes innecesarios.
+-   Configura el comando global **buildapk**.
 
-script.js
+------------------------------------------------------------------------
 
-icon.png (icono de la aplicación)
+# 🖥️ Uso
 
-splash.png (pantalla de inicio de la aplicación)
+Una vez instalado, puedes usar el comando **buildapk** dentro del
+directorio donde se encuentre tu proyecto web.
 
-Ejecución:
+## Comando
 
-```Bash
+``` bash
 buildapk <nombre_de_la_carpeta> <id_de_la_app> "Nombre visible de la app"
 ```
-<nombre_de_la_carpeta>: El nombre de la carpeta donde se creará el proyecto de Cordova.
 
-<id_de_la_app>: Un identificador de paquete único (ej. com.miempresa.mi_app).
+### Parámetros
 
-"Nombre visible de la app": El nombre que aparecerá bajo el icono de la aplicación.
+  -----------------------------------------------------------------------
+  Parámetro                      Descripción
+  ------------------------------ ----------------------------------------
+  `<nombre_de_la_carpeta>`       Carpeta donde se generará el proyecto
+                                 Cordova
 
-Ejemplo:
+  `<id_de_la_app>`               Identificador único del paquete Android
 
-```Bash
+  `"Nombre visible de la app"`   Nombre que aparecerá en el dispositivo
+  -----------------------------------------------------------------------
+
+------------------------------------------------------------------------
+
+# 📂 Archivos requeridos
+
+Antes de ejecutar el comando, asegúrate de que tu proyecto contenga:
+
+    index.html
+    style.css
+    script.js
+    icon.png
+    splash.png
+
+Estos archivos deben estar **en el mismo directorio donde ejecutes
+`buildapk`**.
+
+------------------------------------------------------------------------
+
+# 📌 Ejemplo
+
+``` bash
 buildapk mi-proyecto-web com.ejemplo.webapp "Mi App Web"
 ```
----
-## 📦 Resultado
-Al finalizar, el script creará un directorio con el nombre que especifiques y colocará el archivo APK de depuración (app-debug.apk) en la raíz de esa carpeta para que puedas encontrarlo fácilmente.
+
+Este comando:
+
+1.  Crea un proyecto Cordova.
+2.  Copia los archivos de tu web.
+3.  Configura el proyecto Android.
+4.  Compila la aplicación.
+
+------------------------------------------------------------------------
+
+# 📦 Resultado
+
+Al finalizar el proceso, encontrarás el archivo:
+
+    app-debug.apk
+
+Dentro de la carpeta generada:
+
+    mi-proyecto-web/
+
+La estructura final será similar a:
+
+    mi-proyecto-web/
+     ├── platforms/
+     ├── www/
+     ├── config.xml
+     └── app-debug.apk
+
+Este archivo APK puede instalarse directamente en un dispositivo Android
+para pruebas.
+
+------------------------------------------------------------------------
+
+# 🔧 Flujo de trabajo recomendado
+
+1️⃣ Crear una carpeta para tu proyecto web
+
+    mi-web-app/
+
+2️⃣ Colocar los archivos:
+
+    index.html
+    style.css
+    script.js
+    icon.png
+    splash.png
+
+3️⃣ Ejecutar:
+
+``` bash
+buildapk mi-app com.miempresa.miapp "Mi Web App"
+```
+
+4️⃣ Instalar el APK en tu dispositivo Android.
+
+------------------------------------------------------------------------
+
+# ⚠️ Notas importantes
+
+-   El APK generado es un **APK de depuración (debug)**.
+-   Para publicar en **Google Play**, se recomienda generar un **APK
+    firmado (release)**.
+-   Esta herramienta está pensada principalmente para **apps WebView
+    simples**.
+
+------------------------------------------------------------------------
+
+# 🧠 ¿Para qué sirve esta herramienta?
+
+Este proyecto es ideal para:
+
+-   Convertir **proyectos web en apps móviles**
+-   Crear **MVPs rápidamente**
+-   Probar **ideas de apps sin Android Studio**
+-   Distribuir **herramientas internas**
+-   Convertir **dashboards o utilidades web en apps**
+
+------------------------------------------------------------------------
+
+# 📜 Licencia
+
+Este proyecto se distribuye bajo licencia **MIT**.
+
+Puedes modificarlo, mejorarlo y adaptarlo libremente.
+
+------------------------------------------------------------------------
+
+# 👨‍💻 Autor
+
+Proyecto creado por:
+
+**Rodyher Viloria**
+
+GitHub: https://github.com/Rodyher
+
+------------------------------------------------------------------------
+
+⭐ Si este proyecto te resulta útil, considera darle una estrella en
+GitHub.
