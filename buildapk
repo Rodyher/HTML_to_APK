@@ -59,7 +59,7 @@ SH=$(echo "$SPLASH_DIM" | cut -dx -f2)
 if [ "$SW" -lt 2732 ] || [ "$SH" -lt 2732 ]; then
     echo "Redimensionando splash..."
     mv splash.png splash.png.bak
-    ffmpeg -i splash.png.bak -vf "scale=2732:2732:force_original_aspect_ratio=decrease,pad=2732:2732:(ow-iw)/2:(oh-ih)/2" -y splash.png
+    ffmpeg -i splash.png.bak -vf "scale=2732:2732:force_original_aspect_ratio=decrease,pad=2732:2732:(ow-iw)/2:(oh-ih)/2" -frames:v 1 -update 1 -y splash.png
 fi
 
 ICON_DIM=$(ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of csv=s=x:p=0 icon.png)
@@ -69,7 +69,7 @@ IH=$(echo "$ICON_DIM" | cut -dx -f2)
 if [ "$IW" -lt 1024 ] || [ "$IH" -lt 1024 ]; then
     echo "Redimensionando icon..."
     mv icon.png icon.png.bak
-    ffmpeg -i icon.png.bak -vf "scale=1024:1024:force_original_aspect_ratio=decrease,pad=1024:1024:(ow-iw)/2:(oh-ih)/2" -y icon.png
+    ffmpeg -i icon.png.bak -vf "scale=1024:1024:force_original_aspect_ratio=decrease,pad=1024:1024:(ow-iw)/2:(oh-ih)/2" -frames:v 1 -update 1 -y icon.png
 fi
 
 # --------------------------------
@@ -80,14 +80,18 @@ echo "Creando proyecto..."
 
 cordova create "$FOLDER_NAME" "$APP_ID" "$APP_NAME" || exit 1
 
-rm -rf "$FOLDER_NAME/www"
-mkdir "$FOLDER_NAME/www"
+# Limpiar www por defecto
+rm -rf "$FOLDER_NAME/www/*"
 
-mv index.html style.css script.js "$FOLDER_NAME/www/"
+# Copiar archivos del proyecto
+# Evitamos copiar la carpeta del proyecto recién creada y otros archivos de sistema
+cp -r * "$FOLDER_NAME/www/" 2>/dev/null
+rm -rf "$FOLDER_NAME/www/$FOLDER_NAME"
+rm -f "$FOLDER_NAME/www/icon.png" "$FOLDER_NAME/www/splash.png"
+rm -f "$FOLDER_NAME/www/icon.png.bak" "$FOLDER_NAME/www/splash.png.bak"
 
 mkdir -p "$FOLDER_NAME/resources"
-
-mv icon.png splash.png "$FOLDER_NAME/resources/"
+cp icon.png splash.png "$FOLDER_NAME/resources/"
 
 cd "$FOLDER_NAME" || exit 1
 
@@ -105,8 +109,8 @@ cordova platform add android || exit 1
 
 echo "Instalando plugins..."
 
-cordova plugin add cordova-plugin-splashscreen
-cordova plugin add cordova-plugin-whitelist
+# cordova-plugin-splashscreen y cordova-plugin-whitelist ya no son necesarios en versiones modernas de cordova-android (10+)
+# y causan errores de compilación en cordova-android 15.
 
 # --------------------------------
 # Configurar config.xml
@@ -114,7 +118,16 @@ cordova plugin add cordova-plugin-whitelist
 
 echo "Configurando splash..."
 
+# Limpiar posibles preferencias antiguas si existen (para re-ejecuciones)
+sed -i '/name="SplashScreen"/d' config.xml
+sed -i '/name="SplashScreenDelay"/d' config.xml
+sed -i '/name="FadeSplashScreenDuration"/d' config.xml
+sed -i '/name="AndroidWindowSplashScreenAnimatedIcon"/d' config.xml
+sed -i '/name="AndroidWindowSplashScreenBackground"/d' config.xml
+
+# Añadir nuevas preferencias
 sed -i '/<widget/a \
+    <preference name="SplashScreen" value="screen" />\
     <preference name="SplashScreenDelay" value="3000" />\
     <preference name="FadeSplashScreenDuration" value="500" />\
     <preference name="AndroidWindowSplashScreenAnimatedIcon" value="resources/splash.png" />\
@@ -128,6 +141,9 @@ sed -i '/<widget/a \
 echo "Generando recursos..."
 
 cordova-res android
+
+# Eliminar etiquetas <splash> obsoletas que añade cordova-res y que causan advertencias
+sed -i '/<splash/d' config.xml
 
 cordova prepare
 
